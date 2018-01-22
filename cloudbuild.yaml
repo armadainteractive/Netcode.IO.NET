@@ -12,6 +12,6 @@ steps:
   entrypoint: "bash"
   args:
   - '/workspace/publish.sh'
-  - '${_VER}-$COMMIT_SHA'
+  - 'sha.${_VER}-$COMMIT_SHA'
   - '${_FEED}'
   - '${_FEED_KEY}'
