@@ -11,7 +11,13 @@ steps:
 - name: "mono:latest"
   entrypoint: "bash"
   args:
-  - '/workspace/publish.sh'
+  - '/workspace/pack.sh'
   - '${_VER}-sha$SHORT_SHA'
+
+- name: "microsoft/dotnet:2.0.5-sdk-2.1.4-stretch"
+  entrypoint: "bash"
+  args:
+  - '/workspace/push.sh'
+  - '${_VER}-$COMMIT_SHA'
   - '${_FEED}'
   - '${_FEED_KEY}'
