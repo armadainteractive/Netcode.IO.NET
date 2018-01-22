@@ -18,6 +18,6 @@ steps:
   entrypoint: "bash"
   args:
   - '/workspace/push.sh'
-  - '${_VER}-$COMMIT_SHA'
+  - '${_VER}-sha$SHORT_SHA'
   - '${_FEED}'
   - '${_FEED_KEY}'
