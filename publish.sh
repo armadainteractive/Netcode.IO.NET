@@ -30,7 +30,7 @@ if [ -z "$FEED" ]; then
     echo "Package feed not defined, skipping package publish"
 else
     echo "Publishing package $VER to $FEED"
-    nuget push ./Netcode.IO.NET.$VER.nupkg -Verbosity detailed -ApiKey $FEED_KEY -Source $FEED
+    nuget push ./Netcode.IO.NET.$VER.nupkg $FEED_KEY -Verbosity detailed -Source $FEED
 fi
 
 echo "OK"
