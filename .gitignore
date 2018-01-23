@@ -21,3 +21,4 @@ bld/
 .vs/
 
 *.nupkg
+.DS_Store
