@@ -1,10 +1,10 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using NetcodeIO.NET;
+using Xunit;
 
 using System.Diagnostics;
 
@@ -12,157 +12,157 @@ using NetcodeIO.NET.Tests;
 
 namespace Netcode_IO_Unit_Tests
 {
-	[TestClass]
 	public class UnitTest1
 	{
-		[TestCategory("Misc"), TestMethod]
+		[Fact]
 		public void TestSequence()
 		{
 			Tests.TestSequence();
 		}
 
-		[TestCategory("Misc"), TestMethod]
+		[Fact]
 		public void TestConnectToken()
 		{
 			Tests.TestConnectToken();
 		}
 
-		[TestCategory("Misc"), TestMethod]
+		[Fact]
 		public void TestChallengeToken()
 		{
 			Tests.TestChallengeToken();
 		}
 
-		[TestCategory("Misc"), TestMethod]
+		[Fact]
 		public void TestEncryptionManager()
 		{
 			Tests.TestEncryptionManager();
 		}
 
-		[TestCategory("Misc"), TestMethod]
+		[Fact]
 		public void TestReplayProtection()
 		{
 			Tests.TestReplayProtection();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionRequestPacket()
 		{
 			Tests.TestConnectionRequestPacket();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionDeniedPacket()
 		{
 			Tests.TestConnectionDeniedPacket();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionKeepAlivePacket()
 		{
 			Tests.TestConnectionKeepAlivePacket();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionChallengePacket()
 		{
 			Tests.TestConnectionChallengePacket();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionPayloadPacket()
 		{
 			Tests.TestConnectionPayloadPacket();
 		}
 
-		[TestCategory("Packets"), TestMethod]
+		[Fact]
 		public void TestConnectionDisconnectPacket()
 		{
 			Tests.TestConnectionDisconnectPacket();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientServerConnection()
 		{
 			Tests.TestClientServerConnection();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientServerKeepAlive()
 		{
 			Tests.TestClientServerKeepAlive();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientServerMultipleClients()
 		{
 			Tests.TestClientServerMultipleClients();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientServerMultipleServers()
 		{
 			Tests.TestClientServerMultipleServers();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestConnectTokenExpired()
 		{
 			Tests.TestConnectTokenExpired();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestInvalidConnectToken()
 		{
 			Tests.TestClientInvalidConnectToken();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestConnectionTimeout()
 		{
 			Tests.TestConnectionTimeout();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestChallengeResponseTimeout()
 		{
 			Tests.TestChallengeResponseTimeout();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestConnectionRequestTimeout()
 		{
 			Tests.TestConnectionRequestTimeout();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestConnectionDenied()
 		{
 			Tests.TestConnectionDenied();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientSideDisconnect()
 		{
 			Tests.TestClientSideDisconnect();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestServerSideDisconnect()
 		{
 			Tests.TestServerSideDisconnect();
 		}
 
-		[TestCategory("Connection"), TestMethod]
+		[Fact]
 		public void TestClientReconnect()
 		{
 			Tests.TestReconnect();
 		}
 
-		[TestCategory("Soak Connection"), TestMethod]
+		[Fact]
 		public void SoakConnectionTests()
 		{
-			const int soakTime = 1000 * 60 * 10;
+			// Test for a minute (could run longer but would be bad in unit test scenario)
+			const int soakTime = 1000 * 60 * 1;
 
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
@@ -193,10 +193,11 @@ namespace Netcode_IO_Unit_Tests
 			sw.Stop();
 		}
 
-		[TestCategory("Soak Connection"), TestMethod]
+		[Fact]
 		public void SoakClientServerRandomConnection()
 		{
-			Tests.SoakTestClientServerConnection(30);
+			// Test for a minute (could run longer but would be bad in unit test scenario)
+			Tests.SoakTestClientServerConnection(1);
 		}
 	}
 }
