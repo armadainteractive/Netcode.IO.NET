@@ -699,12 +699,14 @@ namespace NetcodeIO.NET
 			}
 
 			// if this server's public IP is not in the list of endpoints, packet is not valid
-			bool serverAddressInEndpoints = privateConnectToken.ConnectServers.Any(x => x.Endpoint.CompareEndpoint(this.listenEndpoint, this.Port));
-			if (!serverAddressInEndpoints)
-			{
-				log("Server address not listen in token", NetcodeLogLevel.Debug);
-				return;
-			}
+			// TODO Disable server address check temporarily. This implementation does not work with load balancers (or Docker)
+			// where server internal address differs from external address. Proper fix is to add a possibility to configure both when starting the server
+			// bool serverAddressInEndpoints = privateConnectToken.ConnectServers.Any(x => x.Endpoint.CompareEndpoint(this.listenEndpoint, this.Port));
+			// if (!serverAddressInEndpoints)
+			//{
+			//	log("Server address not listen in token", NetcodeLogLevel.Debug);
+			//	return;
+			//}
 
 			// if a client from packet source IP / port is already connected, ignore the packet
 			if (clientSlots.Any(x => x != null && x.RemoteEndpoint.Equals(sender)))
