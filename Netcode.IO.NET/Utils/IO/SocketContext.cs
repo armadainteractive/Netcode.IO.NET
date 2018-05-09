@@ -32,6 +32,7 @@ namespace NetcodeIO.NET.Utils.IO
 
 		private Socket internalSocket;
 		private Thread socketThread;
+		private bool socketRunning;
 
 		private DatagramQueue datagramQueue;
 
@@ -45,6 +46,7 @@ namespace NetcodeIO.NET.Utils.IO
 		{
 			internalSocket.Bind(endpoint);
 
+			socketRunning = true;
 			socketThread = new Thread(runSocket);
 			socketThread.Start();
 		}
@@ -77,7 +79,7 @@ namespace NetcodeIO.NET.Utils.IO
 
 		public void Close()
 		{
-			socketThread.Abort();
+			socketRunning = false;
 			internalSocket.Close();
 		}
 
@@ -88,7 +90,7 @@ namespace NetcodeIO.NET.Utils.IO
 
 		private void runSocket()
 		{
-			while (true)
+			while (socketRunning)
 			{
 				try
 				{
