@@ -287,8 +287,8 @@ namespace NetcodeIO.NET
 			disconnectAll();
 			isRunning = false;
 
-			// HACK: Temporarily disable
-			// this.listenSocket.Close();
+			// Every now and then this takes very long to complete
+			this.listenSocket.Close();
 
 			if (OnClientConnected != null)
 			{
