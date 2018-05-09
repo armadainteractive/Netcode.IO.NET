@@ -284,7 +284,8 @@ namespace NetcodeIO.NET
 		{
 			disposed = true;
 
-			disconnectAll();
+			// HACK: Temporarily disable
+			// disconnectAll();
 			isRunning = false;
 			this.listenSocket.Close();
 
