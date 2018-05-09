@@ -284,10 +284,11 @@ namespace NetcodeIO.NET
 		{
 			disposed = true;
 
-			// HACK: Temporarily disable
-			// disconnectAll();
+			disconnectAll();
 			isRunning = false;
-			this.listenSocket.Close();
+
+			// HACK: Temporarily disable
+			// this.listenSocket.Close();
 
 			if (OnClientConnected != null)
 			{
