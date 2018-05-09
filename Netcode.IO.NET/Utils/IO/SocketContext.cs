@@ -77,7 +77,7 @@ namespace NetcodeIO.NET.Utils.IO
 
 		public void Close()
 		{
-			internalSocket.Shutdown(SocketShutdown.Both);
+			socketThread.Abort();
 			internalSocket.Close();
 		}
 
