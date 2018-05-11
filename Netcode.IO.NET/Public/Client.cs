@@ -319,7 +319,7 @@ namespace NetcodeIO.NET
 		{
 			if (socket != null)
 			{
-				socket.Close();
+				socket.Close(true);
 				socket = null;
 			}
 		}
