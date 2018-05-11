@@ -12,7 +12,7 @@ namespace NetcodeIO.NET.Utils.IO
     internal interface ISocketContext : IDisposable
     {
         int BoundPort { get; }
-        void Close();
+        void Close(bool force);
         void Bind(EndPoint endpoint);
         void SendTo(byte[] data, EndPoint remoteEP);
         void SendTo(byte[] data, int length, EndPoint remoteEP);
@@ -47,7 +47,7 @@ namespace NetcodeIO.NET.Utils.IO
 
             socketThread = new Thread(runSocket);
 
-			// Ensure that this thread dies when the parent thread dies
+            // Ensure that this thread dies when the parent thread dies
             socketThread.IsBackground = true;
             socketThread.Start();
         }
@@ -78,11 +78,14 @@ namespace NetcodeIO.NET.Utils.IO
             return false;
         }
 
-        public void Close()
+        public void Close(bool force = false)
         {
-			// Do not close the socket as this call blocks forever. Just let the socket thread (see .Start) die
-			// with parent thread.
-            // internalSocket.Close();
+            // Do not close the socket by default as this call blocks forever. Just let the socket thread (see .Start) die
+            // with parent thread.
+            if (force)
+            {
+                internalSocket.Close();
+            }
         }
 
         public void Dispose()
@@ -298,7 +301,7 @@ namespace NetcodeIO.NET.Utils.IO
             return false;
         }
 
-        public void Close()
+        public void Close(bool force = false)
         {
             running = false;
             Manager.RemoveContext(this.endpoint);

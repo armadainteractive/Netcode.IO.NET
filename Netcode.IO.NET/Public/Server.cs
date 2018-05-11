@@ -280,7 +280,8 @@ namespace NetcodeIO.NET
 		/// <summary>
 		/// Stop the server and disconnect any clients
 		/// </summary>
-		public void Stop()
+		/// <param name="force">If given tries to close incoming socket, but risks blocking the call.</param>
+		public void Stop(bool force = false)
 		{
 			disposed = true;
 
@@ -288,7 +289,7 @@ namespace NetcodeIO.NET
 			isRunning = false;
 
 			// Every now and then this takes very long to complete
-			this.listenSocket.Close();
+			this.listenSocket.Close(force);
 
 			if (OnClientConnected != null)
 			{
