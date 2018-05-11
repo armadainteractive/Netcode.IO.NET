@@ -9,302 +9,304 @@ using System.Threading;
 
 namespace NetcodeIO.NET.Utils.IO
 {
-	internal interface ISocketContext : IDisposable
-	{
-		int BoundPort { get; }
-		void Close();
-		void Bind(EndPoint endpoint);
-		void SendTo(byte[] data, EndPoint remoteEP);
-		void SendTo(byte[] data, int length, EndPoint remoteEP);
-		bool Read(out Datagram packet);
-		void Pump();
-	}
+    internal interface ISocketContext : IDisposable
+    {
+        int BoundPort { get; }
+        void Close();
+        void Bind(EndPoint endpoint);
+        void SendTo(byte[] data, EndPoint remoteEP);
+        void SendTo(byte[] data, int length, EndPoint remoteEP);
+        bool Read(out Datagram packet);
+        void Pump();
+    }
 
-	internal class UDPSocketContext : ISocketContext
-	{
-		public int BoundPort
-		{
-			get
-			{
-				return ((IPEndPoint)internalSocket.LocalEndPoint).Port;
-			}
-		}
+    internal class UDPSocketContext : ISocketContext
+    {
+        public int BoundPort
+        {
+            get
+            {
+                return ((IPEndPoint)internalSocket.LocalEndPoint).Port;
+            }
+        }
 
-		private Socket internalSocket;
-		private Thread socketThread;
-		private bool socketRunning;
+        private Socket internalSocket;
+        private Thread socketThread;
 
-		private DatagramQueue datagramQueue;
+        private DatagramQueue datagramQueue;
 
-		public UDPSocketContext(AddressFamily addressFamily)
-		{
-			datagramQueue = new DatagramQueue();
-			internalSocket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
-		}
+        public UDPSocketContext(AddressFamily addressFamily)
+        {
+            datagramQueue = new DatagramQueue();
+            internalSocket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+        }
 
-		public void Bind(EndPoint endpoint)
-		{
-			internalSocket.Bind(endpoint);
+        public void Bind(EndPoint endpoint)
+        {
+            internalSocket.Bind(endpoint);
 
-			socketRunning = true;
-			socketThread = new Thread(runSocket);
-			socketThread.Start();
-		}
+            socketThread = new Thread(runSocket);
 
-		public void SendTo(byte[] data, EndPoint remoteEP)
-		{
-			internalSocket.SendTo(data, remoteEP);
-		}
+			// Ensure that this thread dies when the parent thread dies
+            socketThread.IsBackground = true;
+            socketThread.Start();
+        }
 
-		public void SendTo(byte[] data, int length, EndPoint remoteEP)
-		{
-			internalSocket.SendTo(data, length, SocketFlags.None, remoteEP);
-		}
+        public void SendTo(byte[] data, EndPoint remoteEP)
+        {
+            internalSocket.SendTo(data, remoteEP);
+        }
 
-		public void Pump()
-		{
-		}
+        public void SendTo(byte[] data, int length, EndPoint remoteEP)
+        {
+            internalSocket.SendTo(data, length, SocketFlags.None, remoteEP);
+        }
 
-		public bool Read(out Datagram packet)
-		{
-			if (datagramQueue.Count > 0)
-			{
-				packet = datagramQueue.Dequeue();
-				return true;
-			}
+        public void Pump()
+        {
+        }
 
-			packet = new Datagram();
-			return false;
-		}
+        public bool Read(out Datagram packet)
+        {
+            if (datagramQueue.Count > 0)
+            {
+                packet = datagramQueue.Dequeue();
+                return true;
+            }
 
-		public void Close()
-		{
-			socketRunning = false;
-			internalSocket.Close();
-		}
+            packet = new Datagram();
+            return false;
+        }
 
-		public void Dispose()
-		{
-			Close();
-		}
+        public void Close()
+        {
+			// Do not close the socket as this call blocks forever. Just let the socket thread (see .Start) die
+			// with parent thread.
+            // internalSocket.Close();
+        }
 
-		private void runSocket()
-		{
-			while (socketRunning)
-			{
-				try
-				{
-					datagramQueue.ReadFrom(internalSocket);
-				}
-				catch (Exception e)
-				{
-					if (e is SocketException)
-					{
-						var socketException = e as SocketException;
-						if (socketException.SocketErrorCode == SocketError.ConnectionReset) continue;
-					}
-					return;
-				}
-			}
-		}
-	}
+        public void Dispose()
+        {
+            Close();
+        }
 
-	internal class NetworkSimulatorSocketManager
-	{
-		public int LatencyMS = 0;
-		public int JitterMS = 0;
-		public int PacketLossChance = 0;
-		public int DuplicatePacketChance = 0;
+        private void runSocket()
+        {
+            while (true)
+            {
+                try
+                {
+                    datagramQueue.ReadFrom(internalSocket);
+                }
+                catch (Exception e)
+                {
+                    if (e is SocketException)
+                    {
+                        var socketException = e as SocketException;
+                        if (socketException.SocketErrorCode == SocketError.ConnectionReset) continue;
+                    }
+                    return;
+                }
+            }
+        }
+    }
 
-		public bool AutoTime = true;
+    internal class NetworkSimulatorSocketManager
+    {
+        public int LatencyMS = 0;
+        public int JitterMS = 0;
+        public int PacketLossChance = 0;
+        public int DuplicatePacketChance = 0;
 
-		public double Time
-		{
-			get
-			{
-				if (AutoTime)
-					return DateTime.Now.GetTotalSeconds();
-				else
-					return time;
-			}
-		}
+        public bool AutoTime = true;
 
-		private Dictionary<EndPoint, NetworkSimulatorSocketContext> sockets = new Dictionary<EndPoint, NetworkSimulatorSocketContext>();
-		private double time;
+        public double Time
+        {
+            get
+            {
+                if (AutoTime)
+                    return DateTime.Now.GetTotalSeconds();
+                else
+                    return time;
+            }
+        }
 
-		public void Update(double time)
-		{
-			this.time = time;
-		}
+        private Dictionary<EndPoint, NetworkSimulatorSocketContext> sockets = new Dictionary<EndPoint, NetworkSimulatorSocketContext>();
+        private double time;
 
-		public NetworkSimulatorSocketContext CreateContext(EndPoint endpoint)
-		{
-			var socket = new NetworkSimulatorSocketContext();
-			socket.Manager = this;
+        public void Update(double time)
+        {
+            this.time = time;
+        }
 
-			return socket;
-		}
+        public NetworkSimulatorSocketContext CreateContext(EndPoint endpoint)
+        {
+            var socket = new NetworkSimulatorSocketContext();
+            socket.Manager = this;
 
-		public void ChangeContext(NetworkSimulatorSocketContext socket, EndPoint endpoint)
-		{
-			if (sockets.ContainsKey(endpoint))
-				throw new SocketException();
+            return socket;
+        }
 
-			sockets.Add(endpoint, socket);
-		}
+        public void ChangeContext(NetworkSimulatorSocketContext socket, EndPoint endpoint)
+        {
+            if (sockets.ContainsKey(endpoint))
+                throw new SocketException();
 
-		public void RemoveContext(EndPoint endpoint)
-		{
-			sockets.Remove(endpoint);
-		}
+            sockets.Add(endpoint, socket);
+        }
 
-		public NetworkSimulatorSocketContext FindContext(EndPoint endpoint)
-		{
-			if (!sockets.ContainsKey(endpoint))
-				return null;
+        public void RemoveContext(EndPoint endpoint)
+        {
+            sockets.Remove(endpoint);
+        }
 
-			return sockets[endpoint];
-		}
-	}
+        public NetworkSimulatorSocketContext FindContext(EndPoint endpoint)
+        {
+            if (!sockets.ContainsKey(endpoint))
+                return null;
 
-	internal class NetworkSimulatorSocketContext : ISocketContext
-	{
-		public int BoundPort
-		{
-			get { return ((IPEndPoint)endpoint).Port; }
-		}
+            return sockets[endpoint];
+        }
+    }
 
-		private struct simulatedPacket
-		{
-			public double receiveTime;
-			public byte[] packetData;
-			public EndPoint sender;
-		}
+    internal class NetworkSimulatorSocketContext : ISocketContext
+    {
+        public int BoundPort
+        {
+            get { return ((IPEndPoint)endpoint).Port; }
+        }
 
-		public NetworkSimulatorSocketManager Manager;
+        private struct simulatedPacket
+        {
+            public double receiveTime;
+            public byte[] packetData;
+            public EndPoint sender;
+        }
 
-		private EndPoint endpoint;
-		private List<simulatedPacket> simulatedPackets = new List<simulatedPacket>();
-		private DatagramQueue datagramQueue = new DatagramQueue();
-		private object mutex = new object();
+        public NetworkSimulatorSocketManager Manager;
 
-		private Random rand = new Random();
-		private bool running = false;
+        private EndPoint endpoint;
+        private List<simulatedPacket> simulatedPackets = new List<simulatedPacket>();
+        private DatagramQueue datagramQueue = new DatagramQueue();
+        private object mutex = new object();
 
-		public void Bind(EndPoint endpoint)
-		{
-			if (this.endpoint != null && this.endpoint.Equals(endpoint)) return;
+        private Random rand = new Random();
+        private bool running = false;
 
-			this.running = true;
-			this.endpoint = endpoint;
+        public void Bind(EndPoint endpoint)
+        {
+            if (this.endpoint != null && this.endpoint.Equals(endpoint)) return;
 
-			Manager.ChangeContext(this, this.endpoint);
-		}
+            this.running = true;
+            this.endpoint = endpoint;
 
-		public void SimulateReceive(byte[] packetData, EndPoint sender)
-		{
-			if (!running) return;
+            Manager.ChangeContext(this, this.endpoint);
+        }
 
-			double receiveTime = Manager.Time;
+        public void SimulateReceive(byte[] packetData, EndPoint sender)
+        {
+            if (!running) return;
 
-			// add latency+jitter to receive time
-			receiveTime += (Manager.LatencyMS / 1000.0) + (rand.Next(-Manager.JitterMS, Manager.JitterMS) / 2000.0);
+            double receiveTime = Manager.Time;
 
-			lock (mutex)
-			{
-				simulatedPackets.Add(new simulatedPacket()
-				{
-					receiveTime = receiveTime,
-					packetData = packetData,
-					sender = sender
-				});
-			}
-		}
+            // add latency+jitter to receive time
+            receiveTime += (Manager.LatencyMS / 1000.0) + (rand.Next(-Manager.JitterMS, Manager.JitterMS) / 2000.0);
 
-		public void SendTo(byte[] data, EndPoint remoteEP)
-		{
-			if (!running) throw new SocketException();
+            lock (mutex)
+            {
+                simulatedPackets.Add(new simulatedPacket()
+                {
+                    receiveTime = receiveTime,
+                    packetData = packetData,
+                    sender = sender
+                });
+            }
+        }
 
-			// randomly drop packets
-			if (rand.Next(100) < Manager.PacketLossChance)
-			{
-				return;
-			}
+        public void SendTo(byte[] data, EndPoint remoteEP)
+        {
+            if (!running) throw new SocketException();
 
-			byte[] temp = new byte[data.Length];
-			Buffer.BlockCopy(data, 0, temp, 0, data.Length);
+            // randomly drop packets
+            if (rand.Next(100) < Manager.PacketLossChance)
+            {
+                return;
+            }
 
-			var endSocket = Manager.FindContext(remoteEP);
+            byte[] temp = new byte[data.Length];
+            Buffer.BlockCopy(data, 0, temp, 0, data.Length);
 
-			if (endSocket != null)
-			{
-				endSocket.SimulateReceive(temp, this.endpoint);
+            var endSocket = Manager.FindContext(remoteEP);
 
-				// randomly duplicate packets
-				if (rand.Next(100) < Manager.DuplicatePacketChance)
-					endSocket.SimulateReceive(temp, this.endpoint);
-			}
-		}
+            if (endSocket != null)
+            {
+                endSocket.SimulateReceive(temp, this.endpoint);
 
-		public void SendTo(byte[] data, int length, EndPoint remoteEP)
-		{
-			if (!running) throw new SocketException();
+                // randomly duplicate packets
+                if (rand.Next(100) < Manager.DuplicatePacketChance)
+                    endSocket.SimulateReceive(temp, this.endpoint);
+            }
+        }
 
-			byte[] temp = new byte[length];
-			Buffer.BlockCopy(data, 0, temp, 0, length);
+        public void SendTo(byte[] data, int length, EndPoint remoteEP)
+        {
+            if (!running) throw new SocketException();
 
-			SendTo(temp, remoteEP);
-		}
+            byte[] temp = new byte[length];
+            Buffer.BlockCopy(data, 0, temp, 0, length);
 
-		public void Pump()
-		{
-			if (simulatedPackets.Count > 0)
-			{
-				lock (simulatedPackets)
-				{
-					// enqueue packets ready to be received
-					for (int i = 0; i < simulatedPackets.Count; i++)
-					{
-						if (Manager.Time >= simulatedPackets[i].receiveTime)
-						{
-							var receivePacket = simulatedPackets[i];
-							simulatedPackets.RemoveAt(i);
+            SendTo(temp, remoteEP);
+        }
 
-							byte[] receiveBuffer = BufferPool.GetBuffer(2048);
-							Buffer.BlockCopy(receivePacket.packetData, 0, receiveBuffer, 0, receivePacket.packetData.Length);
+        public void Pump()
+        {
+            if (simulatedPackets.Count > 0)
+            {
+                lock (simulatedPackets)
+                {
+                    // enqueue packets ready to be received
+                    for (int i = 0; i < simulatedPackets.Count; i++)
+                    {
+                        if (Manager.Time >= simulatedPackets[i].receiveTime)
+                        {
+                            var receivePacket = simulatedPackets[i];
+                            simulatedPackets.RemoveAt(i);
 
-							Datagram datagram = new Datagram();
-							datagram.payload = receiveBuffer;
-							datagram.payloadSize = receivePacket.packetData.Length;
-							datagram.sender = receivePacket.sender;
-							datagramQueue.Enqueue(datagram);
-						}
-					}
-				}
-			}
-		}
+                            byte[] receiveBuffer = BufferPool.GetBuffer(2048);
+                            Buffer.BlockCopy(receivePacket.packetData, 0, receiveBuffer, 0, receivePacket.packetData.Length);
 
-		public bool Read(out Datagram packet)
-		{
-			if (datagramQueue.Count > 0)
-			{
-				packet = datagramQueue.Dequeue();
-				return true;
-			}
+                            Datagram datagram = new Datagram();
+                            datagram.payload = receiveBuffer;
+                            datagram.payloadSize = receivePacket.packetData.Length;
+                            datagram.sender = receivePacket.sender;
+                            datagramQueue.Enqueue(datagram);
+                        }
+                    }
+                }
+            }
+        }
 
-			packet = new Datagram();
-			return false;
-		}
+        public bool Read(out Datagram packet)
+        {
+            if (datagramQueue.Count > 0)
+            {
+                packet = datagramQueue.Dequeue();
+                return true;
+            }
 
-		public void Close()
-		{
-			running = false;
-			Manager.RemoveContext(this.endpoint);
-		}
+            packet = new Datagram();
+            return false;
+        }
 
-		public void Dispose()
-		{
-			Close();
-		}
-	}
+        public void Close()
+        {
+            running = false;
+            Manager.RemoveContext(this.endpoint);
+        }
+
+        public void Dispose()
+        {
+            Close();
+        }
+    }
 }
